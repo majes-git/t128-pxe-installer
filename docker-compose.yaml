@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  pxe:
+    build: .
+    privileged: true
+    network_mode: host
+    restart: always
+    volumes:
+      - ${ISO_DIR:-./iso}:/iso
+    environment:
+      - BLASTING_INTERFACE=${BLASTING_INTERFACE}
