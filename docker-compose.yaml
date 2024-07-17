@@ -10,3 +10,4 @@ services:
       - ${ISO_DIR:-./iso}:/iso
     environment:
       - BLASTING_INTERFACE=${BLASTING_INTERFACE}
+      - ISO_IMAGE=${ISO_IMAGE}
