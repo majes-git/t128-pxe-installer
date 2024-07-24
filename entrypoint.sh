@@ -46,6 +46,23 @@ cd overlay
 mount -o loop $iso_image ro
 mount -t overlay overlay -olowerdir=ro,upperdir=rw,workdir=work ../iso
 
+# Add files for PXE boot (legacy/non-EFI)
+mkdir /srv/www/pxe
+for f in ldlinux.c32 libcom32.c32 libutil.c32 reboot.c32 vesamenu.c32; do
+    cp /usr/share/syslinux/$f  /srv/www/pxe
+done
+
+# Add files for PXE boot (EFI)
+mkdir /srv/www/pxe-efi
+for f in ldlinux.e64 libcom32.c32 libutil.c32 reboot.c32 vesamenu.c32; do
+    cp /usr/share/syslinux/efi64/$f  /srv/www/pxe-efi
+done
+
+for f in boot.msg splash.png; do
+cp /srv/www/iso/isolinux/$f /srv/www/pxe
+cp /srv/www/iso/isolinux/$f /srv/www/pxe-efi
+done
+
 # Add updates.img with preparations for the HTTP based netboot installer
 cp /updates.img /srv/www/iso/images/
 
@@ -55,18 +72,26 @@ sed -e "s|vmlinuz|http://$ip_address/iso/images/pxeboot/vmlinuz|" \
 -e "s|hd:LABEL=128T:/|http://$ip_address/|" \
 -e "s|hd:LABEL=128T |http://$ip_address/iso |" \
 -e "s|hd:LABEL=128T_ISO|http://$ip_address/iso|" \
-/srv/www/iso/isolinux/isolinux.cfg > /srv/tftp/pxelinux.cfg/default
+/srv/www/iso/isolinux/isolinux.cfg > /srv/www/pxe/isolinux.cfg
+sed 's/\(ks-.*\)\.cfg /\1-uefi.cfg /g' /srv/www/pxe/isolinux.cfg > /srv/www/pxe-efi/isolinux.cfg
 
-otp_config=ks-otp.cfg
-otp_config_src=/srv/www/iso/$otp_config
-if [ -e $otp_config_src ]; then
-    sed -e "s|/mnt/install/repo/|http://$ip_address/iso/|" \
-    -e "s|^cdrom|url --url http://$ip_address/iso/|" \
-    $otp_config_src > /srv/www/$otp_config
-fi
+for config in ks-otp.cfg ks-interactive.cfg ks-otp-uefi.cfg ks-interactive-uefi.cfg; do
+    config_src=/srv/www/iso/$config
+    if [ -e $config_src ]; then
+        sed -e "s|/mnt/install/repo/|http://$ip_address/iso/|" \
+            -e "s|^cdrom|url --url http://$ip_address/iso/|" \
+            $config_src > /srv/www/$config
+    fi
+done
 
 # Start daemons - dnsmasq for DHCP/TFTP and gatling for HTTP
-dnsmasq --bind-dynamic --interface=$BLASTING_INTERFACE --dhcp-range=$dhcp_start_address,$dhcp_end_address
+dnsmasq --bind-dynamic \
+        --dhcp-range=$dhcp_start_address,$dhcp_end_address \
+        --dhcp-option-force=209,isolinux.cfg \
+        --dhcp-option-force=210,http://$ip_address/pxe/ \
+        --dhcp-option-force=tag:efi,210,http://$ip_address/pxe-efi/ \
+        --interface=$BLASTING_INTERFACE
+
 gatling -SF -c /srv/www &
 
 sleep infinity

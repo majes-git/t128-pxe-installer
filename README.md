@@ -73,3 +73,9 @@ squashfs-root/etc/systemd/system
 squashfs-root/etc/systemd/system/anaconda.service.d
 squashfs-root/etc/systemd/system/anaconda.service.d/override.conf
 ```
+
+## Changes
+
+### 2024-07-24
+
+* Added support for UEFI

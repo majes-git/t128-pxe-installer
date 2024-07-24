@@ -7,13 +7,9 @@ RUN echo '@testing https://dl-cdn.alpinelinux.org/alpine/edge/testing' >> /etc/a
 RUN apk --no-cache add dnsmasq gatling@testing squashfs-tools syslinux tini
 
 # Link required syslinux (PXE) files to TFTP space
-RUN mkdir -p /srv/tftp/pxelinux.cfg /srv/www && ln -s \
+RUN mkdir -p /srv/tftp /srv/www && ln -s \
 /usr/share/syslinux/lpxelinux.0 \
-/usr/share/syslinux/ldlinux.c32 \
-/usr/share/syslinux/libcom32.c32 \
-/usr/share/syslinux/libutil.c32 \
-/usr/share/syslinux/reboot.c32 \
-/usr/share/syslinux/vesamenu.c32 \
+/usr/share/syslinux/efi64/syslinux.efi \
 /srv/tftp
 
 # Create an updates.img image to prepare the SSR installer files
